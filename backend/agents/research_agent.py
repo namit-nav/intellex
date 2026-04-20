@@ -51,12 +51,20 @@ def research_company(company, persona="research_assistant", query=None):
 
 You already created a research report on {company}.
 
-Here is the report:
+STRICT RULES:
+- Answer ONLY using the report below
+- Do NOT use outside knowledge
+- Do NOT assume or hallucinate anything
+- If the answer is not clearly present, say: "Not found in report"
+- Be precise and concise
+
+REPORT:
 {previous}
 
-Answer this follow-up question clearly and concisely:
-
+QUESTION:
 {query}
+
+Answer:
 """
         return ask_llm(chat_prompt)
 

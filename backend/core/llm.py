@@ -20,8 +20,7 @@ api_key = os.getenv("GROQ_API_KEY")
 print("FINAL API KEY:", repr(api_key))
 
 if not api_key:
-
-    raise ValueError("GROQ_API_KEY not found")
+    print("WARNING: GROQ_API_KEY not found")
 
 from groq import Groq
 

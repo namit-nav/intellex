@@ -3,10 +3,12 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import HTTPException
 
-
-
-
 app = FastAPI()
+
+@app.get("/")
+
+def root():
+    return {"message": "Intellex backend is live"}
 
 # -------- CORS (REACT) --------
 app.add_middleware(
@@ -42,6 +44,7 @@ class CompareReq(BaseModel):
 
 def research(req: ResearchReq):
     try:
+        from agents.research_agent import research_company
         result = research_company(
             req.company,
             req.persona,
@@ -56,6 +59,7 @@ def research(req: ResearchReq):
 @app.post("/planner")
 def planner(req: PlannerReq):
     try:
+        from agents.planner_agent import plan_research
         result = plan_research(req.problem)
         return {"result": result}
     except Exception as e:
@@ -66,6 +70,7 @@ def planner(req: PlannerReq):
 @app.post("/docs")
 def docs(req: DocsReq):
     try:
+        from agents.document_agent import ask_document
         result = ask_document(req.question, req.content)
         return {"result": result}
 
@@ -76,6 +81,9 @@ def docs(req: DocsReq):
 @app.post("/compare")
 def compare(req: CompareReq):
     try:
+        from agents.research_agent import research_company
+        from core.llm import ask_llm
+        from core.prompts import comparison_prompt
         r1 = research_company(req.company1)
         r2 = research_company(req.company2)
 

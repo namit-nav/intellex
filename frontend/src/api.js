@@ -1,4 +1,4 @@
-const BASE_URL = "http://127.0.0.1:8000";
+const BASE_URL = "https://intellex-u0y3.onrender.com";
 
 // -------- RESEARCH --------
 export async function researchCompany(company, persona, query = null) {

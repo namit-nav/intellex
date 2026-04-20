@@ -17,7 +17,6 @@ load_dotenv(ENV_PATH, override=True)
 
 api_key = os.getenv("GROQ_API_KEY")
 
-print("FINAL API KEY:", repr(api_key))
 
 if not api_key:
     print("WARNING: GROQ_API_KEY not found")

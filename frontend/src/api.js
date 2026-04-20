@@ -1,49 +1,80 @@
 const BASE_URL = "http://127.0.0.1:8000";
 
-export async function researchCompany(company, persona) {
-  const res = await fetch(`${BASE_URL}/research`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ company, persona }),
-  });
+// -------- RESEARCH --------
+export async function researchCompany(company, persona, query = null) {
+  try {
+    const res = await fetch(`${BASE_URL}/research`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ company, persona, query }),
+    });
 
-  return await res.json();
+    const data = await res.json();
+    return data.result;
+
+  } catch (err) {
+    return "Error: " + err.message;
+  }
 }
 
+
+// -------- PLANNER --------
 export async function planResearch(problem) {
-  const res = await fetch(`${BASE_URL}/planner`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ problem }),
-  });
+  try {
+    const res = await fetch(`${BASE_URL}/planner`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ problem }),
+    });
 
-  return await res.json();
+    const data = await res.json();
+    return data.result;
+
+  } catch (err) {
+    return "Error: " + err.message;
+  }
 }
 
+
+// -------- DOCS --------
 export async function askDocs(question, content) {
-  const res = await fetch(`${BASE_URL}/docs`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ question, content }),
-  });
+  try {
+    const res = await fetch(`${BASE_URL}/docs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ question, content }),
+    });
 
-  return await res.json();
+    const data = await res.json();
+    return data.result;
+
+  } catch (err) {
+    return "Error: " + err.message;
+  }
 }
 
-export async function compareCompanies(c1, c2) {
-  const res = await fetch(`${BASE_URL}/compare`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ company1: c1, company2: c2 }),
-  });
 
-  return await res.json();
+// -------- COMPARE --------
+export async function compareCompanies(c1, c2) {
+  try {
+    const res = await fetch(`${BASE_URL}/compare`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ company1: c1, company2: c2 }),
+    });
+
+    const data = await res.json();
+    return data.result;
+
+  } catch (err) {
+    return "Error: " + err.message;
+  }
 }

@@ -5,60 +5,68 @@ def research_prompt(persona_prompt, company, information):
 
 You are an expert business research analyst.
 
-Generate a detailed and professional company research report.
+Generate a **clear, structured, and analytical** company research report.
 
 Company: {company}
 
 Information Sources:
 {information}
 
-Instructions:
-- Be analytical, not just descriptive
-- Use bullet points where possible
-- Avoid vague statements
-- Focus on insights and reasoning
+Strict Instructions:
+- Do NOT hallucinate facts
+- Use only the provided information
+- Be analytical, not descriptive
+- Keep sentences concise and meaningful
+- Use bullet points where appropriate
+- Avoid repetition
 
-Structure your response clearly:
+Formatting Rules (VERY IMPORTANT):
+- Use "## " for section headings
+- Use "- " for bullet points
+- Keep sections clean and readable
 
-1. Company Overview
+Output Structure:
+
+## Company Overview
 - Brief history
 - Mission and core business focus
 
-2. Products and Services
+## Products and Services
 - Key offerings
-- Important technologies or innovations
+- Technologies and innovations
 
-3. Market Position
+## Market Position
 - Industry standing
 - Competitive advantages
 
-4. Competitors
+## Competitors
 - Major competitors
-- How this company compares
+- Comparison positioning
 
-5. Recent Developments
+## Recent Developments
 - Product launches
 - Partnerships
 - Strategic moves
 
-6. Opportunities
+## Opportunities
 - Growth areas
-- Market trends benefiting the company
+- Market trends
 
-7. Strategic Account Plan
+## Strategic Insights
 - Business opportunities
-- Potential partnerships
-- Strategic recommendations
+- Recommendations
+- Risks if applicable
 
-Make the output structured, clear, and insightful.
+Ensure the output is insightful, structured, and professional.
 """
+
 
 def comparison_prompt(company1, company2, info1, info2):
 
     return f"""
 You are a strategic business analyst.
 
-Compare the following two companies in a clear and analytical way.
+Compare the following two companies in a **clear, structured, and analytical** way.
 
 Company 1: {company1}
 Information:
@@ -68,24 +76,37 @@ Company 2: {company2}
 Information:
 {info2}
 
-Instructions:
-- Highlight key differences clearly
-- Explain WHY the companies differ
-- Compare business models and strategies
-- Provide deeper insights, not just descriptions
-- Use bullet points where possible
+Strict Instructions:
+- Do NOT hallucinate
+- Focus on differences and reasoning
+- Be concise but insightful
+- Use bullet points where useful
 
-Structure:
+Formatting Rules:
+- Use "## " for section headings
+- Use "- " for bullet points
 
-1. Company Overview
-2. Key Products and Technologies
-3. Market Position
-4. Competitive Advantages
-5. Growth Opportunities
-6. Strategic Insights
-- Key differences between the companies
-- Which company is better positioned for future growth and why
-- Risks and limitations of each company
+Output Structure:
 
-Make the comparison concise, structured, and insightful.
+## Company Overview
+- Summary of both companies
+
+## Products and Technologies
+- Key offerings comparison
+
+## Market Position
+- Industry standing comparison
+
+## Competitive Advantages
+- Strengths of each company
+
+## Growth Opportunities
+- Future potential comparison
+
+## Strategic Insights
+- Key differences
+- Which company is better positioned and why
+- Risks and limitations of both
+
+Keep the comparison balanced, sharp, and insightful.
 """

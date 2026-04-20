@@ -1,77 +1,66 @@
-from documents.file_loader import load_pdf, load_docx, load_txt
 from documents.chunker import chunk_text
 from documents.vector_store import store_chunks, search_chunks
 from core.llm import ask_llm
-from core.memory import set_document_loaded, is_document_loaded, clear_document
+from core.memory import set_document, is_document_loaded, clear_document
 
 
-# -------- LOAD DOCUMENT --------
-def load_document(path):
+# -------- LOAD DOCUMENT FROM TEXT --------
+def load_document_text(content):
 
-    if not path:
-        return "❌ Please provide a file path."
+    if not content:
+        return "Please provide document content."
 
     try:
-        if path.endswith(".pdf"):
-            text = load_pdf(path)
-
-        elif path.endswith(".docx"):
-            text = load_docx(path)
-
-        elif path.endswith(".txt"):
-            text = load_txt(path)
-
-        else:
-            return "❌ Unsupported file format."
-
-        if not text:
-            return "❌ Failed to extract text from document."
-
-        chunks = chunk_text(text)
+        chunks = chunk_text(content)
 
         if not chunks:
-            return "❌ Failed to create document chunks."
+            return "Failed to process document."
 
         store_chunks(chunks)
 
-        set_document_loaded()
+        set_document(content)
 
-        return "✅ Document loaded and indexed successfully."
+        return "Document loaded successfully."
 
     except Exception as e:
-        return f"❌ Error loading document: {str(e)}"
+        return f"Error loading document: {str(e)}"
 
 
 # -------- ASK DOCUMENT --------
-def ask_document(question):
+def ask_document(question, content=None):
 
     if not question:
-        return "❌ Please enter a question."
+        return "Please enter a question."
+
+    # If content is sent from frontend → load it first
+    if content:
+        load_document_text(content)
 
     if not is_document_loaded():
-        return "❌ No document loaded. Please upload a document first."
+        return "No document loaded."
 
     try:
         relevant_chunks = search_chunks(question)
 
         if not relevant_chunks:
-            return "❌ No relevant information found in the document."
+            return "No relevant information found."
 
-        context = "\n".join(relevant_chunks[:5])  # limit context
+        context = "\n".join(relevant_chunks[:5])
 
         prompt = f"""
-You are a document analysis assistant.
+You are a strict document analysis assistant.
 
-Answer ONLY based on the provided context.
-If the answer is not in the context, say: "Not found in document."
+Rules:
+- Answer ONLY from the provided context
+- If answer is not present, say: Not found in document
+- Do NOT assume or guess
+- Keep answer concise
 
 Context:
 {context}
 
 Question:
 {question}
-
-Answer clearly and concisely.
 """
 
         answer = ask_llm(prompt)
@@ -79,23 +68,4 @@ Answer clearly and concisely.
         return answer
 
     except Exception as e:
-        return f"❌ Error during document query: {str(e)}"
-
-
-# -------- CLI TEST --------
-if __name__ == "__main__":
-
-    path = input("Enter document path: ")
-    print(load_document(path))
-
-    while True:
-
-        question = input("\nAsk a question about the document: ")
-
-        if question.lower() == "exit":
-            break
-
-        answer = ask_document(question)
-
-        print("\nAnswer:\n")
-        print(answer)
+        return f"Error during query: {str(e)}"

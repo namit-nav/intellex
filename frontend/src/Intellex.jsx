@@ -1,4 +1,10 @@
 import { useState, useRef, useEffect } from "react";
+import {
+  researchCompany,
+  planResearch,
+  askDocs,
+  compareCompanies
+} from "./api";
 
 const C = {
   bg: "#06090f",
@@ -22,25 +28,6 @@ const SYSTEMS = {
   sales_strategist: `You are a strategic sales intelligence advisor. Research companies focusing on: key decision makers, organizational pain points, budget signals, tech stack, recent strategic initiatives, and actionable outreach angles. Use clear section headers with ##.`,
 };
 
-async function callAPI(messages, system) {
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
-        system: system || "You are a helpful AI assistant.",
-        messages,
-      }),
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    return data.content.map((b) => b.text || "").join("");
-  } catch (err) {
-    return `⚠ Error: ${err.message}`;
-  }
-}
 
 function Spinner() {
   return (
@@ -322,11 +309,14 @@ function ResearchTool() {
     setLoading(true);
     setReport(null);
     setChatHistory([]);
-    const result = await callAPI(
-      [{ role: "user", content: `Research this company thoroughly: ${company}` }],
-      SYSTEMS[persona]
-    );
-    setReport(result);
+    
+    try {
+      const result = await researchCompany(company, persona);
+      setReport(result);
+    } catch (err) {
+      setReport("Failed to fetch report");
+    }
+    
     setLoading(false);
   };
 
@@ -335,14 +325,21 @@ function ResearchTool() {
     const msg = chatInput;
     setChatInput("");
     setChatLoading(true);
+    
     const newHistory = [...chatHistory, { role: "user", content: msg }];
     setChatHistory(newHistory);
-    const context = `Here is the research report about ${company}:\n\n${report}\n\nAnswer the following question based on this research:`;
-    const response = await callAPI(
-      [{ role: "user", content: `${context}\n\n${msg}` }],
-      SYSTEMS[persona]
-    );
-    setChatHistory([...newHistory, { role: "assistant", content: response }]);
+    try {
+      const response = await researchCompany(company, persona, msg);
+      setChatHistory([
+        ...newHistory,
+        { role: "assistant", content: response }
+      ]);
+    } catch (err) {
+      setChatHistory([
+        ...newHistory,
+        { role: "assistant", content: "Error getting response" }
+      ]);
+    }
     setChatLoading(false);
   };
 
@@ -466,11 +463,12 @@ function PlannerTool() {
     if (!problem.trim()) return;
     setLoading(true);
     setResult(null);
-    const res = await callAPI(
-      [{ role: "user", content: `Create a detailed, actionable research and execution plan for the following problem or goal:\n\n${problem}\n\nInclude: problem analysis, key research questions, step-by-step action plan, success metrics, and potential risks. Use ## for section headers.` }],
-      "You are a strategic planning expert. Create clear, structured, actionable plans with specific steps and milestones."
-    );
-    setResult(res);
+    try {
+      const res = await planResearch(problem);
+      setResult(res);
+    } catch (err) {
+      setResult("Error generating plan");
+    }
     setLoading(false);
   };
 
@@ -539,11 +537,12 @@ function DocsTool() {
   const ask = async () => {
     if (!question.trim() || !docContent.trim()) return;
     setLoading(true);
-    const res = await callAPI(
-      [{ role: "user", content: `Document content:\n\n${docContent.slice(0, 8000)}\n\n---\n\nQuestion: ${question}` }],
-      "You are a precise document analyst. Answer questions based strictly on the provided document content. If the answer is not in the document, say so clearly."
-    );
-    setAnswer(res);
+    try {
+      const res = await askDocs(question, docContent);
+      setAnswer(res);
+    } catch (err) {
+      setAnswer("Error analyzing document");
+    }
     setLoading(false);
   };
 
@@ -625,25 +624,13 @@ function CompareTool() {
     if (!c1.trim() || !c2.trim()) return;
     setLoading(true);
     setResult(null);
-    setStatus(`Researching ${c1}...`);
-    const r1 = await callAPI(
-      [{ role: "user", content: `Briefly research ${c1}: overview, products, market position, size, strengths, weaknesses.` }],
-      SYSTEMS.research_assistant
-    );
-    setStatus(`Researching ${c2}...`);
-    const r2 = await callAPI(
-      [{ role: "user", content: `Briefly research ${c2}: overview, products, market position, size, strengths, weaknesses.` }],
-      SYSTEMS.research_assistant
-    );
-    setStatus("Comparing...");
-    const comparison = await callAPI(
-      [{
-        role: "user",
-        content: `Compare these two companies in detail:\n\n**${c1}:**\n${r1}\n\n**${c2}:**\n${r2}\n\nProvide a structured comparison covering: Business Model, Market Position, Strengths, Weaknesses, Products/Services, Target Market, Competitive Advantages, and a final verdict on which excels in which areas. Use ## for section headers.`
-      }],
-      "You are a competitive intelligence analyst. Provide balanced, insightful company comparisons."
-    );
-    setResult(comparison);
+    setStatus("Comparing companies...");
+    try {
+      const res = await compareCompanies(c1, c2);
+      setResult(res);
+    } catch (err) {
+      setResult("Error comparing companies");
+    }
     setStatus("");
     setLoading(false);
   };

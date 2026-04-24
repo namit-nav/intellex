@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import HTTPException
+from routes.export import router as export_router
 
 app = FastAPI()
 
@@ -9,6 +10,8 @@ app = FastAPI()
 
 def root():
     return {"message": "Intellex backend is live"}
+
+app.include_router(export_router)
 
 # -------- CORS (REACT) --------
 app.add_middleware(

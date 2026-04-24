@@ -343,6 +343,31 @@ function ResearchTool() {
     setChatLoading(false);
   };
 
+  const downloadPDF = async () => {
+  try {
+    const res = await fetch("https://intellex-u0y3.onrender.com/export-pdf", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        content: report,
+      }),
+    });
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${company}-report.pdf`;
+    a.click();
+  } catch (err) {
+    console.error(err);
+    alert("PDF download failed");
+  }
+};
+
   return (
     <div>
       <Card>
@@ -376,6 +401,23 @@ function ResearchTool() {
       {report && (
         <>
           <Card style={{ marginTop: 16 }}>
+            <div style={{ marginBottom: 12 }}>
+              <button
+              onClick={downloadPDF}
+              style={{
+                padding: "8px 14px",
+                background: "#f97316",
+                border: "none",
+                borderRadius: 6,
+                color: "#fff",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer"
+              }}
+              >
+                Download PDF
+              </button>
+            </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>{company}</div>

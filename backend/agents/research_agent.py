@@ -10,6 +10,8 @@ from core.llm import ask_llm
 from core.prompts import research_prompt
 from core.memory import set_research, is_same_company, clear_chat_memory
 from core.cache import get_cache, set_cache
+from tavily import TavilyClient
+import os
 
 
 # -------- CONFIG --------
@@ -80,35 +82,29 @@ Answer:
     # -------- PERSONA --------
     persona_prompt = get_persona_prompt(persona)
 
-    # -------- SEARCH --------
-    links = search_company(company)
-    if not links:
-        return "No data sources found."
 
-    links = list(set(links))[:MAX_LINKS]
+    tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
-    # -------- SCRAPE --------
-    collected_chunks = []
-    total_length = 0
-
+    # -------- SEARCH (TAVILY) --------
     try:
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            results = list(executor.map(scrape_and_clean, links))
-    except Exception:
-        results = []
+        response = tavily.search(
+            query=f"{company} company overview business model revenue competitors latest news",
+            search_depth="advanced",
+            max_results=5
+            )
 
-    for text in results:
-        if text:
-            collected_chunks.append(text)
-            total_length += len(text)
+        results = response.get("results", [])
 
-        if total_length >= MAX_TOTAL_TEXT:
-            break
+        if not results:
+            return "Failed to fetch company data."
 
-    if not collected_chunks:
-        return "Failed to collect useful data."
+        collected_text = "\n\n".join([
+            f"{r['title']}\n{r['content']}"
+            for r in results
+        ])
 
-    collected_text = "\n".join(collected_chunks)
+    except Exception as e:
+        return f"Search error: {str(e)}"
 
     # -------- NEWS --------
     try:

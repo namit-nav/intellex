@@ -344,6 +344,7 @@ function ResearchTool() {
   };
 
   const downloadPDF = async () => {
+    console.log("REPORT:", report);
   try {
     const res = await fetch("https://intellex-u0y3.onrender.com/export-pdf", {
       method: "POST",

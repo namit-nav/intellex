@@ -1,30 +1,44 @@
 from fastapi import APIRouter
-from fastapi.responses import Response
+from pydantic import BaseModel
+from fastapi.responses import StreamingResponse
+from io import BytesIO
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
-import io
+import html
 
 router = APIRouter()
 
-@router.post("/export-pdf")
-def export_pdf(data: dict):
-    text = data.get("text", "")
+class ExportRequest(BaseModel):
+    content: str
 
-    buffer = io.BytesIO()
+
+@router.post("/export-pdf")
+def export_pdf(req: ExportRequest):
+    buffer = BytesIO()
+
     doc = SimpleDocTemplate(buffer)
     styles = getSampleStyleSheet()
 
     story = []
-    for line in text.split("\n"):
-        story.append(Paragraph(line, styles["Normal"]))
 
-    doc.build(story)
+    # 🔥 CLEAN TEXT (THIS FIXES YOUR ISSUE)
+    safe_text = html.escape(req.content)
 
-    pdf = buffer.getvalue()
-    buffer.close()
+    for line in safe_text.split("\n"):
+        if line.strip():
+            story.append(Paragraph(line, styles["Normal"]))
 
-    return Response(
-        content=pdf,
+    try:
+        doc.build(story)
+    except Exception as e:
+        print("PDF ERROR:", str(e))
+
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
         media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=intellex_report.pdf"}
+        headers={
+            "Content-Disposition": "attachment; filename=report.pdf"
+        },
     )

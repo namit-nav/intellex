@@ -1,10 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor
-
-from research.search import search_company
-from research.web_scraper import scrape_page
-from research.text_cleaner import clean_text
-from research.news_collector import get_company_news
-
 from agents.persona_manager import get_persona_prompt
 from core.llm import ask_llm
 from core.prompts import research_prompt
@@ -17,17 +10,6 @@ import os
 # -------- CONFIG --------
 MAX_LINKS = 10
 MAX_TOTAL_TEXT = 8000
-
-
-# -------- Scrape + Clean --------
-def scrape_and_clean(link):
-    try:
-        text = scrape_page(link)
-        text = clean_text(text)
-        return text[:1000]
-    except Exception:
-        return ""
-
 
 # -------- MAIN FUNCTION --------
 def research_company(company, persona="research_assistant", query=None):
@@ -90,7 +72,7 @@ Answer:
         response = tavily.search(
             query=f"{company} company overview business model revenue competitors latest news",
             search_depth="advanced",
-            max_results=5
+            max_results=3
             )
 
         results = response.get("results", [])
@@ -99,25 +81,35 @@ Answer:
             return "Failed to fetch company data."
 
         collected_text = "\n\n".join([
-            f"{r['title']}\n{r['content']}"
+            f"{r['title']}\n{r['content'][:500]}"
             for r in results
         ])
 
     except Exception as e:
         return f"Search error: {str(e)}"
 
-    # -------- NEWS --------
+    # -------- NEWS (TAVILY) --------
     try:
-        news_links = get_company_news(company)
+        news_response = tavily.search(
+            query=f"{company} funding acquisitions earnings results news",
+            search_depth="advanced",
+            max_results=3
+        )
+
+        news_results = news_response.get("results", [])
+
+        if news_results:
+            news_text = "\nRecent News:\n"
+            for n in news_results:
+                news_text += f"- {n['title']}\n"
+
+            collected_text += "\n" + news_text
+
     except Exception:
-        news_links = []
+        pass
 
-    if news_links:
-        news_text = "\nRecent News:\n"
-        for n in news_links[:5]:
-            news_text += f"- {n}\n"
-
-        collected_text += "\n" + news_text
+    MAX_INPUT_SIZE = 2000
+    collected_text = collected_text[:MAX_INPUT_SIZE]
 
     # -------- PROMPT --------
     prompt = research_prompt(persona_prompt, company, collected_text)

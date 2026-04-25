@@ -7,6 +7,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib import colors
 import html
+import re
 
 router = APIRouter()
 
@@ -41,23 +42,22 @@ def export_pdf(req: ExportRequest):
 
     # 👉 Format content
     for line in safe_text.split("\n"):
-
         line = line.strip()
-
         if not line:
             continue
-
-        # Detect headings
+        
+        line = re.sub(r"\*\*(.*?)\*\*", r"\1", line)
+        
         if line.startswith("##"):
-            story.append(Paragraph(line.replace("##", ""), heading_style))
+            story.append(Paragraph(line.replace("##", "").strip(), heading_style))
             story.append(Spacer(1, 10))
-
+            
         elif line.startswith("-"):
             story.append(Paragraph(f"• {line[1:].strip()}", normal_style))
-
+        
         else:
             story.append(Paragraph(line, normal_style))
-
+            
         story.append(Spacer(1, 8))
 
     doc.build(story)

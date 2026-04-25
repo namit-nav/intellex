@@ -11,55 +11,73 @@ import re
 
 router = APIRouter()
 
+
 class ExportRequest(BaseModel):
     content: str
 
 
 @router.post("/export-pdf")
 def export_pdf(req: ExportRequest):
-    buffer = BytesIO()
 
+    buffer = BytesIO()
     doc = SimpleDocTemplate(buffer)
+
     styles = getSampleStyleSheet()
 
-    # ✨ Custom Styles
+    # ---------- STYLES ----------
     title_style = styles["Heading1"]
     title_style.alignment = TA_CENTER
     title_style.textColor = colors.HexColor("#0B1C3F")
+    title_style.fontSize = 20
+    title_style.spaceAfter = 20
 
     heading_style = styles["Heading2"]
     heading_style.textColor = colors.HexColor("#FF7A00")
+    heading_style.fontSize = 14
+    heading_style.spaceAfter = 10
 
     normal_style = styles["Normal"]
+    normal_style.fontSize = 10
+    normal_style.leading = 14
 
     story = []
 
-    safe_text = html.escape(req.content)
+    # ---------- TEXT CLEANING ----------
+    # Fix ₹ and weird symbols
+    safe_text = req.content.replace("₹", "Rs. ")
+    safe_text = html.escape(safe_text)
 
-    # 👉 Title
+    # ---------- TITLE ----------
     story.append(Paragraph("Intellex Research Report", title_style))
     story.append(Spacer(1, 20))
 
-    # 👉 Format content
+    # ---------- CONTENT PROCESSING ----------
     for line in safe_text.split("\n"):
+
         line = line.strip()
+
         if not line:
             continue
-        
-        line = re.sub(r"\*\*(.*?)\*\*", r"\1", line)
-        
-        if line.startswith("##"):
-            story.append(Paragraph(line.replace("##", "").strip(), heading_style))
-            story.append(Spacer(1, 10))
-            
+
+        # 🔥 Convert **bold** → <b>bold</b>
+        line = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", line)
+
+        # 🔥 Headings detection
+        if line.isupper() or "Overview" in line or "Position" in line:
+            story.append(Paragraph(f"<b>{line}</b>", heading_style))
+            story.append(Spacer(1, 12))
+
+        # 🔥 Bullet points
         elif line.startswith("-"):
             story.append(Paragraph(f"• {line[1:].strip()}", normal_style))
-        
+            story.append(Spacer(1, 6))
+
+        # 🔥 Normal text
         else:
             story.append(Paragraph(line, normal_style))
-            
-        story.append(Spacer(1, 8))
+            story.append(Spacer(1, 6))
 
+    # ---------- BUILD PDF ----------
     doc.build(story)
 
     buffer.seek(0)

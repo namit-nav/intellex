@@ -59,23 +59,20 @@ def export_pdf(req: ExportRequest):
         if not line:
             continue
 
-        # 🔥 Convert **bold** → <b>bold</b>
         line = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", line)
+        line = line.replace("##", "").strip()
 
-        # 🔥 Headings detection
-        if line.isupper() or "Overview" in line or "Position" in line:
+        if line.lower().startswith(("company", "products", "market", "competitors", "recent", "opportunities", "strategic")):
             story.append(Paragraph(f"<b>{line}</b>", heading_style))
             story.append(Spacer(1, 12))
 
-        # 🔥 Bullet points
         elif line.startswith("-"):
             story.append(Paragraph(f"• {line[1:].strip()}", normal_style))
-            story.append(Spacer(1, 6))
+            story.append(Spacer(1, 8))
 
-        # 🔥 Normal text
         else:
             story.append(Paragraph(line, normal_style))
-            story.append(Spacer(1, 6))
+            story.append(Spacer(1, 8))
 
     # ---------- BUILD PDF ----------
     doc.build(story)

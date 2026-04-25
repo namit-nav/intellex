@@ -2,8 +2,10 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from fastapi.responses import StreamingResponse
 from io import BytesIO
-from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib import colors
 import html
 
 router = APIRouter()
@@ -19,19 +21,46 @@ def export_pdf(req: ExportRequest):
     doc = SimpleDocTemplate(buffer)
     styles = getSampleStyleSheet()
 
+    # ✨ Custom Styles
+    title_style = styles["Heading1"]
+    title_style.alignment = TA_CENTER
+    title_style.textColor = colors.HexColor("#0B1C3F")
+
+    heading_style = styles["Heading2"]
+    heading_style.textColor = colors.HexColor("#FF7A00")
+
+    normal_style = styles["Normal"]
+
     story = []
 
-    # 🔥 CLEAN TEXT (THIS FIXES YOUR ISSUE)
     safe_text = html.escape(req.content)
 
-    for line in safe_text.split("\n"):
-        if line.strip():
-            story.append(Paragraph(line, styles["Normal"]))
+    # 👉 Title
+    story.append(Paragraph("Intellex Research Report", title_style))
+    story.append(Spacer(1, 20))
 
-    try:
-        doc.build(story)
-    except Exception as e:
-        print("PDF ERROR:", str(e))
+    # 👉 Format content
+    for line in safe_text.split("\n"):
+
+        line = line.strip()
+
+        if not line:
+            continue
+
+        # Detect headings
+        if line.startswith("##"):
+            story.append(Paragraph(line.replace("##", ""), heading_style))
+            story.append(Spacer(1, 10))
+
+        elif line.startswith("-"):
+            story.append(Paragraph(f"• {line[1:].strip()}", normal_style))
+
+        else:
+            story.append(Paragraph(line, normal_style))
+
+        story.append(Spacer(1, 8))
+
+    doc.build(story)
 
     buffer.seek(0)
 
@@ -39,6 +68,6 @@ def export_pdf(req: ExportRequest):
         buffer,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": "attachment; filename=report.pdf"
+            "Content-Disposition": "attachment; filename=Intellex_Report.pdf"
         },
     )

@@ -69,3 +69,26 @@ Question:
 
     except Exception as e:
         return f"Error during query: {str(e)}"
+    
+from PyPDF2 import PdfReader
+
+
+# -------- LOAD DOCUMENT FROM PDF --------
+def load_document_pdf(file):
+
+    try:
+        reader = PdfReader(file)
+        text = ""
+
+        for page in reader.pages:
+            extracted = page.extract_text()
+            if extracted:
+                text += extracted + "\n"
+
+        if not text.strip():
+            return "Failed to extract text from PDF."
+
+        return load_document_text(text)
+
+    except Exception as e:
+        return f"Error reading PDF: {str(e)}"

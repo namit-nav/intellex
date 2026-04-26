@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import HTTPException
 from routes.export import router as export_router
+from fastapi import UploadFile, File
 
 app = FastAPI()
 
@@ -34,7 +35,6 @@ class PlannerReq(BaseModel):
 
 class DocsReq(BaseModel):
     question: str
-    content: str
 
 class CompareReq(BaseModel):
     company1: str
@@ -74,11 +74,20 @@ def planner(req: PlannerReq):
 def docs(req: DocsReq):
     try:
         from agents.document_agent import ask_document
-        result = ask_document(req.question, req.content)
+        result = ask_document(req.question)
         return {"result": result}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/docs-upload-pdf")
+async def upload_pdf(file: UploadFile = File(...)):
+
+    from agents.document_agent import load_document_pdf
+
+    result = load_document_pdf(file.file)
+
+    return {"message": result}
 
 
 @app.post("/compare")

@@ -1,49 +1,34 @@
-import chromadb
-from sentence_transformers import SentenceTransformer
-import uuid
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-
-# -------- INIT CHROMA (PERSISTENT) --------
-client = chromadb.Client()
-
-# ✅ FIX: no crash if exists
-collection = client.get_or_create_collection("documents")
-
-# -------- EMBEDDING MODEL --------
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# -------- GLOBAL STORAGE --------
+documents = []
+vectorizer = TfidfVectorizer()
+doc_vectors = None
 
 
 # -------- STORE CHUNKS --------
 def store_chunks(chunks):
+    global documents, vectorizer, doc_vectors
 
     if not chunks:
         return
 
-    embeddings = model.encode(chunks).tolist()
-
-    ids = [str(uuid.uuid4()) for _ in chunks]  # unique IDs
-
-    collection.add(
-        documents=chunks,
-        embeddings=embeddings,
-        ids=ids
-    )
+    documents = chunks
+    doc_vectors = vectorizer.fit_transform(documents)
 
 
 # -------- SEARCH --------
 def search_chunks(query, top_k=3):
+    global documents, vectorizer, doc_vectors
 
-    if not query:
+    if not documents or doc_vectors is None:
         return []
 
-    query_embedding = model.encode([query]).tolist()
+    query_vec = vectorizer.transform([query])
 
-    results = collection.query(
-        query_embeddings=query_embedding,
-        n_results=top_k
-    )
+    similarities = cosine_similarity(query_vec, doc_vectors)[0]
 
-    if not results or not results.get("documents"):
-        return []
+    top_indices = similarities.argsort()[-top_k:][::-1]
 
-    return results["documents"][0]
+    return [documents[i] for i in top_indices]

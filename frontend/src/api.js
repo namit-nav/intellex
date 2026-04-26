@@ -41,22 +41,30 @@ export async function planResearch(problem) {
 
 
 // -------- DOCS --------
-export async function askDocs(question, content) {
-  try {
-    const res = await fetch(`${BASE_URL}/docs`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ question, content }),
-    });
+export async function askDocs(question) {
+  const res = await fetch(`${BASE_URL}/docs`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ question }),
+  });
 
-    const data = await res.json();
-    return data.result;
+  const data = await res.json();
+  return data.result;
+}
 
-  } catch (err) {
-    return "Error: " + err.message;
-  }
+export async function uploadPDF(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${BASE_URL}/docs-upload-pdf`, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await res.json();
+  return data.message;
 }
 
 

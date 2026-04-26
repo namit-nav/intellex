@@ -5,6 +5,7 @@ import {
   askDocs,
   compareCompanies
 } from "./api";
+import { askDocs, uploadPDF } from "./api";
 
 const C = {
   bg: "#06090f",
@@ -567,25 +568,38 @@ function DocsTool() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
   const fileRef = useRef();
 
-  const handleFile = (e) => {
+  // -------- HANDLE PDF UPLOAD --------
+  const handleFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setDocContent(ev.target.result);
-    reader.readAsText(file);
+
+    try {
+      const msg = await uploadPDF(file);
+      alert(msg);
+      setUploaded(true);        
+      setDocContent("");        
+    } catch (err) {
+      alert("Upload failed");
+    }
   };
 
+  // -------- ASK QUESTION --------
   const ask = async () => {
-    if (!question.trim() || !docContent.trim()) return;
+    if (!question.trim()) return;
+
     setLoading(true);
+    setAnswer(null);
+
     try {
-      const res = await askDocs(question, docContent);
+      const res = await askDocs(question);
       setAnswer(res);
     } catch (err) {
       setAnswer("Error analyzing document");
     }
+
     setLoading(false);
   };
 
@@ -593,62 +607,164 @@ function DocsTool() {
     <div>
       <Card>
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>Document</div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            <button onClick={() => fileRef.current.click()} style={{
-              padding: "9px 16px", background: C.surface2,
-              border: `1px solid ${C.borderMid}`, borderRadius: 8,
-              color: C.textMuted, fontSize: 13, cursor: "pointer",
-            }}>
-              Upload .txt / .md file
-            </button>
-            <input ref={fileRef} type="file" accept=".txt,.md,.csv" onChange={handleFile} style={{ display: "none" }} />
-            {docContent && <Tag color="rgba(34,197,94,0.25)">Document loaded</Tag>}
+          <div
+            style={{
+              fontSize: 11,
+              color: C.textDim,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              marginBottom: 8,
+            }}
+          >
+            Document
           </div>
-          <div style={{ fontSize: 12, color: C.textDim, marginBottom: 8 }}>Or paste document content directly:</div>
+
+          {/* -------- Upload Section -------- */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            <button
+              onClick={() => fileRef.current.click()}
+              style={{
+                padding: "9px 16px",
+                background: C.surface2,
+                border: `1px solid ${C.borderMid}`,
+                borderRadius: 8,
+                color: C.textMuted,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              Upload PDF
+            </button>
+
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".pdf"
+              onChange={handleFile}
+              style={{ display: "none" }}
+            />
+
+            {uploaded && (
+              <Tag color="rgba(34,197,94,0.25)">PDF loaded</Tag>
+            )}
+          </div>
+
+          {/* -------- Optional Text Input -------- */}
+          <div
+            style={{
+              fontSize: 12,
+              color: C.textDim,
+              marginBottom: 8,
+            }}
+          >
+            (Optional) Paste document content directly:
+          </div>
+
           <textarea
             value={docContent}
             onChange={(e) => setDocContent(e.target.value)}
-            placeholder="Paste your document text here..."
+            placeholder="Paste text if not using PDF..."
             rows={6}
             style={{
-              width: "100%", padding: "12px 14px", fontSize: 13,
-              background: C.surface2, border: `1px solid ${C.borderMid}`,
-              borderRadius: 8, color: C.text, outline: "none",
-              boxSizing: "border-box", resize: "vertical", lineHeight: 1.6,
+              width: "100%",
+              padding: "12px 14px",
+              fontSize: 13,
+              background: C.surface2,
+              border: `1px solid ${C.borderMid}`,
+              borderRadius: 8,
+              color: C.text,
+              outline: "none",
+              boxSizing: "border-box",
+              resize: "vertical",
+              lineHeight: 1.6,
               fontFamily: "monospace",
             }}
-            onFocus={(e) => e.target.style.borderColor = C.accentBorder}
-            onBlur={(e) => e.target.style.borderColor = C.borderMid}
+            onFocus={(e) => (e.target.style.borderColor = C.accentBorder)}
+            onBlur={(e) => (e.target.style.borderColor = C.borderMid)}
           />
-          <div style={{ fontSize: 11, color: C.textDim, marginTop: 4 }}>{docContent.length} characters loaded</div>
-        </div>
 
-        <div style={{ display: "flex", gap: 8 }}>
-          <div style={{ flex: 1 }}>
-            <Input label="Your Question" value={question} onChange={setQuestion} placeholder="What does the document say about..." />
+          <div
+            style={{
+              fontSize: 11,
+              color: C.textDim,
+              marginTop: 4,
+            }}
+          >
+            {docContent.length} characters
           </div>
         </div>
-        <PrimaryButton onClick={ask} loading={loading} disabled={!question.trim() || !docContent.trim()}>
+
+        {/* -------- Question Input -------- */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ flex: 1 }}>
+            <Input
+              label="Your Question"
+              value={question}
+              onChange={setQuestion}
+              placeholder="What does the document say about..."
+            />
+          </div>
+        </div>
+
+        {/* -------- Ask Button -------- */}
+        <PrimaryButton
+          onClick={ask}
+          loading={loading}
+          disabled={!question.trim()}
+        >
           {loading ? "Analyzing..." : "Ask Question"}
         </PrimaryButton>
       </Card>
 
+      {/* -------- Loading -------- */}
       {loading && (
-        <Card style={{ marginTop: 16, textAlign: "center", padding: "40px 24px" }}>
-          <div style={{ marginBottom: 12 }}><Spinner /></div>
-          <div style={{ color: C.textMuted, fontSize: 14 }}>Reading document...</div>
+        <Card
+          style={{
+            marginTop: 16,
+            textAlign: "center",
+            padding: "40px 24px",
+          }}
+        >
+          <div style={{ marginBottom: 12 }}>
+            <Spinner />
+          </div>
+          <div style={{ color: C.textMuted, fontSize: 14 }}>
+            Reading document...
+          </div>
         </Card>
       )}
 
+      {/* -------- Answer -------- */}
       {answer && (
         <Card style={{ marginTop: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: C.text,
+              marginBottom: 16,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
             <span style={{ color: C.accent }}>◈</span> Answer
           </div>
-          <div style={{ fontSize: 12, color: C.textDim, marginBottom: 12, padding: "8px 12px", background: C.surface2, borderRadius: 6, borderLeft: `3px solid ${C.accentBorder}` }}>
+
+          <div
+            style={{
+              fontSize: 12,
+              color: C.textDim,
+              marginBottom: 12,
+              padding: "8px 12px",
+              background: C.surface2,
+              borderRadius: 6,
+              borderLeft: `3px solid ${C.accentBorder}`,
+            }}
+          >
             Q: {question}
           </div>
+
           <ReportDisplay text={answer} />
         </Card>
       )}

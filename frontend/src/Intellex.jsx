@@ -3,9 +3,10 @@ import {
   researchCompany,
   planResearch,
   askDocs,
-  compareCompanies
+  compareCompanies,
+  uploadPDF
 } from "./api";
-import { askDocs, uploadPDF } from "./api";
+
 
 const C = {
   bg: "#06090f",

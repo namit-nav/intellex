@@ -54,17 +54,29 @@ export async function askDocs(question) {
   return data.result;
 }
 
-export async function uploadPDF(file) {
+import axios from "axios";
+
+const BASE_URL = "https://intellex-u0y3.onrender.com";
+
+export async function uploadPDF(file, onProgress) {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(`${BASE_URL}/docs-upload-pdf`, {
-    method: "POST",
-    body: formData,
+  const res = await axios.post(`${BASE_URL}/docs-upload-pdf`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+    onUploadProgress: (progressEvent) => {
+      if (onProgress) {
+        const percent = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        onProgress(percent);
+      }
+    },
   });
 
-  const data = await res.json();
-  return data.message;
+  return res.data.message;
 }
 
 

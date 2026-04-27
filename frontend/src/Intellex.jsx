@@ -571,23 +571,46 @@ function DocsTool() {
   const [loading, setLoading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const intervalRef = useRef(null);
   const fileRef = useRef();
 
   // -------- HANDLE FILE UPLOAD (PDF ONLY) --------
   const handleFile = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const file = e.target.files[0];
+  if (!file) return;
 
-    try {
-      const msg = await uploadPDF(file);
-      alert(msg);
+  setUploaded(false);
+  setUploadProgress(5);
 
-      setUploaded(true);     // mark PDF uploaded
-      setDocContent("");     // clear text if any
-    } catch (err) {
-      alert("Upload failed");
+  let progress = 5;
+
+  // store interval safely
+  intervalRef.current = setInterval(() => {
+    progress += Math.random() * 10;
+    if (progress < 90) {
+      setUploadProgress(Math.floor(progress));
     }
-  };
+  }, 300);
+
+  try {
+    const msg = await uploadPDF(file);
+
+    clearInterval(intervalRef.current);
+
+    setUploadProgress(100);
+    setUploaded(true);
+    alert(msg);
+
+    setTimeout(() => {
+      setUploadProgress(0);
+    }, 1200);
+
+  } catch (err) {
+    clearInterval(intervalRef.current);
+    setUploadProgress(0);
+    alert("Upload failed");
+  }
+};
 
   // -------- ASK QUESTION --------
   const ask = async () => {

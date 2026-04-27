@@ -572,7 +572,7 @@ function DocsTool() {
   const [uploaded, setUploaded] = useState(false);
   const fileRef = useRef();
 
-  // -------- HANDLE PDF UPLOAD --------
+  // -------- HANDLE FILE UPLOAD (PDF ONLY) --------
   const handleFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -580,8 +580,9 @@ function DocsTool() {
     try {
       const msg = await uploadPDF(file);
       alert(msg);
-      setUploaded(true);        
-      setDocContent("");        
+
+      setUploaded(true);     // mark PDF uploaded
+      setDocContent("");     // clear text if any
     } catch (err) {
       alert("Upload failed");
     }
@@ -595,7 +596,16 @@ function DocsTool() {
     setAnswer(null);
 
     try {
-      const res = await askDocs(question);
+      let res;
+
+      // 👉 PRIORITY: If text exists → send text
+      if (docContent.trim()) {
+        res = await askDocs(question, docContent);
+      } else {
+        // 👉 Otherwise → use uploaded PDF (backend memory)
+        res = await askDocs(question);
+      }
+
       setAnswer(res);
     } catch (err) {
       setAnswer("Error analyzing document");
@@ -646,11 +656,13 @@ function DocsTool() {
             />
 
             {uploaded && (
-              <Tag color="rgba(34,197,94,0.25)">PDF loaded</Tag>
+              <Tag color="rgba(34,197,94,0.25)">
+                PDF uploaded
+              </Tag>
             )}
           </div>
 
-          {/* -------- Optional Text Input -------- */}
+          {/* -------- TEXT INPUT (OPTIONAL) -------- */}
           <div
             style={{
               fontSize: 12,
@@ -658,13 +670,16 @@ function DocsTool() {
               marginBottom: 8,
             }}
           >
-            (Optional) Paste document content directly:
+            Or paste document content:
           </div>
 
           <textarea
             value={docContent}
-            onChange={(e) => setDocContent(e.target.value)}
-            placeholder="Paste text if not using PDF..."
+            onChange={(e) => {
+              setDocContent(e.target.value);
+              if (e.target.value) setUploaded(false); // text overrides PDF
+            }}
+            placeholder="Paste document text here..."
             rows={6}
             style={{
               width: "100%",
@@ -680,8 +695,6 @@ function DocsTool() {
               lineHeight: 1.6,
               fontFamily: "monospace",
             }}
-            onFocus={(e) => (e.target.style.borderColor = C.accentBorder)}
-            onBlur={(e) => (e.target.style.borderColor = C.borderMid)}
           />
 
           <div
@@ -695,7 +708,7 @@ function DocsTool() {
           </div>
         </div>
 
-        {/* -------- Question Input -------- */}
+        {/* -------- QUESTION INPUT -------- */}
         <div style={{ display: "flex", gap: 8 }}>
           <div style={{ flex: 1 }}>
             <Input
@@ -707,7 +720,7 @@ function DocsTool() {
           </div>
         </div>
 
-        {/* -------- Ask Button -------- */}
+        {/* -------- ASK BUTTON -------- */}
         <PrimaryButton
           onClick={ask}
           loading={loading}
@@ -717,7 +730,7 @@ function DocsTool() {
         </PrimaryButton>
       </Card>
 
-      {/* -------- Loading -------- */}
+      {/* -------- LOADING -------- */}
       {loading && (
         <Card
           style={{
@@ -735,7 +748,7 @@ function DocsTool() {
         </Card>
       )}
 
-      {/* -------- Answer -------- */}
+      {/* -------- ANSWER -------- */}
       {answer && (
         <Card style={{ marginTop: 16 }}>
           <div

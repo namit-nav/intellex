@@ -569,48 +569,63 @@ function DocsTool() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState(null);
   const [loading, setLoading] = useState(false);
+
   const [uploaded, setUploaded] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const intervalRef = useRef(null);
+
   const fileRef = useRef();
+  const intervalRef = useRef(null);
 
-  // -------- HANDLE FILE UPLOAD (PDF ONLY) --------
+  // -------- CLEANUP (IMPORTANT) --------
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  // -------- HANDLE PDF UPLOAD --------
   const handleFile = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+    const file = e.target.files[0];
+    if (!file) return;
 
-  setUploaded(false);
-  setUploadProgress(5);
+    setUploading(true);
+    setUploaded(false);
+    setUploadProgress(5);
 
-  let progress = 5;
+    let progress = 5;
 
-  // store interval safely
-  intervalRef.current = setInterval(() => {
-    progress += Math.random() * 10;
-    if (progress < 90) {
-      setUploadProgress(Math.floor(progress));
-    }
-  }, 300);
+    intervalRef.current = setInterval(() => {
+      progress += Math.random() * 10;
+      if (progress < 90) {
+        setUploadProgress(Math.floor(progress));
+      }
+    }, 300);
 
-  try {
-    const msg = await uploadPDF(file);
+    try {
+      const msg = await uploadPDF(file);
 
-    clearInterval(intervalRef.current);
+      clearInterval(intervalRef.current);
 
-    setUploadProgress(100);
-    setUploaded(true);
-    alert(msg);
+      setUploadProgress(100);
+      setUploaded(true);
+      alert(msg);
 
-    setTimeout(() => {
+      setTimeout(() => {
+        setUploadProgress(0);
+      }, 1200);
+
+    } catch (err) {
+      clearInterval(intervalRef.current);
       setUploadProgress(0);
-    }, 1200);
+      alert("Upload failed");
+    }
 
-  } catch (err) {
-    clearInterval(intervalRef.current);
-    setUploadProgress(0);
-    alert("Upload failed");
-  }
-};
+    setUploading(false);
+
+    // allow re-upload same file
+    if (fileRef.current) fileRef.current.value = null;
+  };
 
   // -------- ASK QUESTION --------
   const ask = async () => {
@@ -622,11 +637,9 @@ function DocsTool() {
     try {
       let res;
 
-      // 👉 PRIORITY: If text exists → send text
       if (docContent.trim()) {
         res = await askDocs(question, docContent);
       } else {
-        // 👉 Otherwise → use uploaded PDF (backend memory)
         res = await askDocs(question);
       }
 
@@ -639,213 +652,212 @@ function DocsTool() {
   };
 
   return (
-  <div>
-    <Card>
-      <div style={{ marginBottom: 16 }}>
-        
-        {/* -------- HEADER -------- */}
-        <div
-          style={{
-            fontSize: 11,
-            color: C.textDim,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            marginBottom: 8,
-          }}
-        >
-          Document
-        </div>
+    <div>
+      <Card>
+        <div style={{ marginBottom: 16 }}>
 
-        {/* -------- Upload Section -------- */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-          <button
-            onClick={() => fileRef.current.click()}
+          {/* -------- HEADER -------- */}
+          <div
             style={{
-              padding: "9px 16px",
+              fontSize: 11,
+              color: C.textDim,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              marginBottom: 8,
+            }}
+          >
+            Document
+          </div>
+
+          {/* -------- UPLOAD -------- */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            <button
+              onClick={() => !uploading && fileRef.current.click()}
+              disabled={uploading}
+              style={{
+                padding: "9px 16px",
+                background: uploading ? C.surface3 : C.surface2,
+                border: `1px solid ${C.borderMid}`,
+                borderRadius: 8,
+                color: uploading ? C.textDim : C.textMuted,
+                fontSize: 13,
+                cursor: uploading ? "not-allowed" : "pointer",
+              }}
+            >
+              {uploading ? "Uploading..." : "Upload PDF"}
+            </button>
+
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".pdf"
+              onChange={handleFile}
+              style={{ display: "none" }}
+            />
+
+            {uploaded && (
+              <Tag color="rgba(34,197,94,0.25)">
+                PDF loaded ✓
+              </Tag>
+            )}
+          </div>
+
+          {/* -------- PROGRESS BAR -------- */}
+          {uploadProgress > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <div
+                style={{
+                  height: 6,
+                  background: "#1f2937",
+                  borderRadius: 4,
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${uploadProgress}%`,
+                    height: "100%",
+                    background: "#f97316",
+                    transition: "width 0.3s ease",
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  fontSize: 11,
+                  color: uploadProgress === 100 ? "#22c55e" : C.textDim,
+                  marginTop: 4,
+                }}
+              >
+                {uploadProgress < 100
+                  ? `Uploading... ${uploadProgress}%`
+                  : "Upload complete ✓"}
+              </div>
+            </div>
+          )}
+
+          {/* -------- TEXT INPUT -------- */}
+          <div
+            style={{
+              fontSize: 12,
+              color: C.textDim,
+              marginBottom: 8,
+              marginTop: 12,
+            }}
+          >
+            Or paste document content:
+          </div>
+
+          <textarea
+            value={docContent}
+            onChange={(e) => {
+              setDocContent(e.target.value);
+
+              if (e.target.value) {
+                setUploaded(false);
+                setUploadProgress(0);
+              }
+            }}
+            placeholder="Paste document text here..."
+            rows={6}
+            style={{
+              width: "100%",
+              padding: "12px 14px",
+              fontSize: 13,
               background: C.surface2,
               border: `1px solid ${C.borderMid}`,
               borderRadius: 8,
-              color: C.textMuted,
+              color: C.text,
+              outline: "none",
+              boxSizing: "border-box",
+              resize: "vertical",
+              lineHeight: 1.6,
+              fontFamily: "monospace",
+            }}
+          />
+
+          <div style={{ fontSize: 11, color: C.textDim, marginTop: 4 }}>
+            {docContent.length} characters
+          </div>
+        </div>
+
+        {/* -------- QUESTION -------- */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ flex: 1 }}>
+            <Input
+              label="Your Question"
+              value={question}
+              onChange={setQuestion}
+              placeholder="What does the document say about..."
+            />
+          </div>
+        </div>
+
+        {/* -------- ASK -------- */}
+        <PrimaryButton
+          onClick={ask}
+          loading={loading}
+          disabled={!question.trim()}
+        >
+          {loading ? "Analyzing..." : "Ask Question"}
+        </PrimaryButton>
+      </Card>
+
+      {/* -------- LOADING -------- */}
+      {loading && (
+        <Card
+          style={{
+            marginTop: 16,
+            textAlign: "center",
+            padding: "40px 24px",
+          }}
+        >
+          <div style={{ marginBottom: 12 }}>
+            <Spinner />
+          </div>
+          <div style={{ color: C.textMuted, fontSize: 14 }}>
+            Reading document...
+          </div>
+        </Card>
+      )}
+
+      {/* -------- ANSWER -------- */}
+      {answer && (
+        <Card style={{ marginTop: 16 }}>
+          <div
+            style={{
               fontSize: 13,
-              cursor: "pointer",
+              fontWeight: 600,
+              color: C.text,
+              marginBottom: 16,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
             }}
           >
-            Upload PDF
-          </button>
-
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".pdf"
-            onChange={handleFile}
-            style={{ display: "none" }}
-          />
-
-          {uploaded && (
-            <Tag color="rgba(34,197,94,0.25)">
-              PDF uploaded ✓
-            </Tag>
-          )}
-        </div>
-
-        {/* -------- Upload Progress -------- */}
-        {uploadProgress > 0 && (
-          <div style={{ marginTop: 8 }}>
-            <div
-              style={{
-                height: 6,
-                background: "#1f2937",
-                borderRadius: 4,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  width: `${uploadProgress}%`,
-                  height: "100%",
-                  background: "#f97316",
-                  transition: "width 0.3s ease",
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                fontSize: 11,
-                color: uploadProgress === 100 ? "#22c55e" : C.textDim,
-                marginTop: 4,
-              }}
-            >
-              {uploadProgress < 100
-                ? `Uploading... ${uploadProgress}%`
-                : "Upload complete ✓"}
-            </div>
+            <span style={{ color: C.accent }}>◈</span> Answer
           </div>
-        )}
 
-        {/* -------- TEXT INPUT -------- */}
-        <div
-          style={{
-            fontSize: 12,
-            color: C.textDim,
-            marginBottom: 8,
-            marginTop: 12,
-          }}
-        >
-          Or paste document content:
-        </div>
+          <div
+            style={{
+              fontSize: 12,
+              color: C.textDim,
+              marginBottom: 12,
+              padding: "8px 12px",
+              background: C.surface2,
+              borderRadius: 6,
+              borderLeft: `3px solid ${C.accentBorder}`,
+            }}
+          >
+            Q: {question}
+          </div>
 
-        <textarea
-          value={docContent}
-          onChange={(e) => {
-            setDocContent(e.target.value);
-            if (e.target.value) setUploaded(false);
-          }}
-          placeholder="Paste document text here..."
-          rows={6}
-          style={{
-            width: "100%",
-            padding: "12px 14px",
-            fontSize: 13,
-            background: C.surface2,
-            border: `1px solid ${C.borderMid}`,
-            borderRadius: 8,
-            color: C.text,
-            outline: "none",
-            boxSizing: "border-box",
-            resize: "vertical",
-            lineHeight: 1.6,
-            fontFamily: "monospace",
-          }}
-        />
-
-        <div
-          style={{
-            fontSize: 11,
-            color: C.textDim,
-            marginTop: 4,
-          }}
-        >
-          {docContent.length} characters
-        </div>
-      </div>
-
-      {/* -------- QUESTION INPUT -------- */}
-      <div style={{ display: "flex", gap: 8 }}>
-        <div style={{ flex: 1 }}>
-          <Input
-            label="Your Question"
-            value={question}
-            onChange={setQuestion}
-            placeholder="What does the document say about..."
-          />
-        </div>
-      </div>
-
-      {/* -------- ASK BUTTON -------- */}
-      <PrimaryButton
-        onClick={ask}
-        loading={loading}
-        disabled={!question.trim()}
-      >
-        {loading ? "Analyzing..." : "Ask Question"}
-      </PrimaryButton>
-    </Card>
-
-    {/* -------- LOADING -------- */}
-    {loading && (
-      <Card
-        style={{
-          marginTop: 16,
-          textAlign: "center",
-          padding: "40px 24px",
-        }}
-      >
-        <div style={{ marginBottom: 12 }}>
-          <Spinner />
-        </div>
-        <div style={{ color: C.textMuted, fontSize: 14 }}>
-          Reading document...
-        </div>
-      </Card>
-    )}
-
-    {/* -------- ANSWER -------- */}
-    {answer && (
-      <Card style={{ marginTop: 16 }}>
-        <div
-          style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: C.text,
-            marginBottom: 16,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <span style={{ color: C.accent }}>◈</span> Answer
-        </div>
-
-        <div
-          style={{
-            fontSize: 12,
-            color: C.textDim,
-            marginBottom: 12,
-            padding: "8px 12px",
-            background: C.surface2,
-            borderRadius: 6,
-            borderLeft: `3px solid ${C.accentBorder}`,
-          }}
-        >
-          Q: {question}
-        </div>
-
-        <ReportDisplay text={answer} />
-      </Card>
-    )}
-  </div>
-);
+          <ReportDisplay text={answer} />
+        </Card>
+      )}
+    </div>
+  );
 }
 
 function CompareTool() {

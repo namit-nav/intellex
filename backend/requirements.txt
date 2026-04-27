@@ -20,6 +20,7 @@ pydantic==2.13.2
 pydantic_core==2.46.2
 PyPDF2==3.0.1
 python-dotenv==1.2.2
+python-multipart==0.0.26
 regex==2026.4.4
 reportlab==4.4.10
 requests==2.33.1

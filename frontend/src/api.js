@@ -56,8 +56,6 @@ export async function askDocs(question) {
 
 import axios from "axios";
 
-const BASE_URL = "https://intellex-u0y3.onrender.com";
-
 export async function uploadPDF(file, onProgress) {
   const formData = new FormData();
   formData.append("file", file);

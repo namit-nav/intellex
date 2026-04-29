@@ -1016,6 +1016,8 @@ function AboutPage() {
 }
 
 function ContactPage() {
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -1023,28 +1025,28 @@ function ContactPage() {
 
   const send = async () => {
     if (!name || !email || !message) return;
+
+    setLoading(true);
+    setStatus("");
+
     try {
-      const res = await fetch("https://formspree.io/f/mjglbvbp", {
+      await fetch("https://formspree.io/f/your-id", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name,
-          email,
-          message,
-        }),
+        body: JSON.stringify({ name, email, message }),
       });
 
-      if (res.ok) {
-        setSent(true);
-      } else {
-        alert("Failed to send message");
-      }
-
+      setStatus("success");
+      setName("");
+      setEmail("");
+      setMessage("");
     } catch (err) {
-      alert("Error sending message");
+      setStatus("error");
     }
+
+    setLoading(false);
   };
 
   return (
@@ -1073,7 +1075,36 @@ function ContactPage() {
             onBlur={(e) => e.target.style.borderColor = C.borderMid}
           />
         </div>
-        <PrimaryButton onClick={send} disabled={!name || !email || !message}>Send Message</PrimaryButton>
+        <PrimaryButton onClick={send} disabled={loading || !name || !email || !message}>
+          {loading ? "Sending..." : "Send Message"}
+        </PrimaryButton>
+        {status === "success" && (
+          <div style={{
+            marginTop: 16,
+            padding: "10px 14px",
+            borderRadius: 6,
+            background: "rgba(34,197,94,0.15)",
+            border: "1px solid rgba(34,197,94,0.4)",
+            color: "#22c55e",
+            fontSize: 13
+          }}>
+            ✓ Message sent successfully
+          </div>
+        )}
+
+        {status === "error" && (
+          <div style={{
+            marginTop: 16,
+            padding: "10px 14px",
+            borderRadius: 6,
+            background: "rgba(239,68,68,0.15)",
+            border: "1px solid rgba(239,68,68,0.4)",
+            color: "#ef4444",
+            fontSize: 13
+          }}>
+            ✕ Failed to send message
+         </div>
+        )}
       </Card>
     </div>
   );

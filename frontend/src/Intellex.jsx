@@ -1021,17 +1021,31 @@ function ContactPage() {
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
 
-  const send = () => {
-    if (name && email && message) setSent(true);
-  };
+  const send = async () => {
+    if (!name || !email || !message) return;
+    try {
+      const res = await fetch("https://formspree.io/f/mjglbvbp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          message,
+        }),
+      });
 
-  if (sent) return (
-    <Card style={{ textAlign: "center", padding: "64px 32px" }}>
-      <div style={{ fontSize: 36, marginBottom: 16, color: C.accent }}>✓</div>
-      <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>Message Sent</div>
-      <div style={{ fontSize: 14, color: C.textMuted }}>We'll be in touch at {email}</div>
-    </Card>
-  );
+      if (res.ok) {
+        setSent(true);
+      } else {
+        alert("Failed to send message");
+      }
+
+    } catch (err) {
+      alert("Error sending message");
+    }
+  };
 
   return (
     <div style={{ maxWidth: 520 }}>

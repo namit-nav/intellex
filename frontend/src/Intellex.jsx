@@ -1075,7 +1075,7 @@ function ContactPage() {
             onBlur={(e) => e.target.style.borderColor = C.borderMid}
           />
         </div>
-        <PrimaryButton onClick={send} disabled={loading || !name || !email || !message}>
+        <PrimaryButton type="button" onClick={send} disabled={loading || !name || !email || !message}>
           {loading ? "Sending..." : "Send Message"}
         </PrimaryButton>
         {status === "success" && (

@@ -1030,22 +1030,30 @@ function ContactPage() {
     setStatus("");
 
     try {
-      await fetch("https://formspree.io/f/your-id", {
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("email", email);
+      formData.append("message", message);
+
+      const res = await fetch("https://formspree.io/f/mjglbvbp", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Accept": "application/json",
         },
-        body: JSON.stringify({ name, email, message }),
+        body: formData,
       });
-
-      setStatus("success");
-      setName("");
-      setEmail("");
-      setMessage("");
+      
+      if (res.ok) {
+        setStatus("success");
+        setName("");
+        setEmail("");
+        setMessage("");
+      } else {
+        setStatus("error");
+      }
     } catch (err) {
       setStatus("error");
     }
-
     setLoading(false);
   };
 

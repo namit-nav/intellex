@@ -67,11 +67,10 @@ Access Code:
 ```txt
 duckcoders123
 
-⸻
+---
 
-Developed By
+## Developed By
 
 Namit Kumar (DUCK CODERS)
-
 Focused on building AI-powered tools, intelligent systems, and automation-driven applications.
 

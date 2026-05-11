@@ -72,6 +72,6 @@ duckcoders123
 
 ## Developed By
 
-Namit Kumar (DUCK CODERS)
+Namit Kumar (DUCK CODERS) <br>
 Focused on building AI-powered tools, intelligent systems, and automation-driven applications.
 
